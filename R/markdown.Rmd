@@ -1,0 +1,277 @@
+---
+title: "Camden IMD Dashboard"
+output:
+  flexdashboard::flex_dashboard: 
+    orientation: rows
+    theme: flatly
+    vertical_layout: fill
+
+params:
+  fixed_col: 1
+  sort_col: 4
+---
+
+
+
+```{r echo = FALSE ,message = FALSE, warning = FALSE}
+
+library(knitr)
+library(tidyverse)
+library(RSQLite)
+library(flexdashboard)
+library(DT)
+library(wordcloud)
+library(ggplot2)
+library(plotly)
+
+
+
+# Set up directories
+
+path <- dirname(rstudioapi::getActiveDocumentContext()$path)
+path <- dirname(path)
+
+
+dir_list <- list.dirs(path,recursive = FALSE)
+dir_list <- gsub(paste0(path,"/"), "", dir_list)
+
+
+for (sub_dir_name in dir_list){
+  
+    if (sub_dir_name != ".git"){
+      
+      
+      str_1 = paste0(sub_dir_name,"_dir <- ")
+      str_2 = paste0("'",path,"/",sub_dir_name,"/'")
+      my_code <- paste0(str_1,str_2)
+      eval(parse(text=my_code))
+      
+      
+                                }
+    
+  
+  
+                               }
+
+# Import data
+
+db <- dbConnect(SQLite(),dbname=paste0(data_dir,"Camden-data.db"))
+
+#dbListTables(db)
+df_data <- dbReadTable(conn=db,name="Camden_data")
+dbDisconnect(db)
+
+
+# Format columns
+#df_stats$points_to_cost <- round(df_stats$points_to_cost,1)
+
+# Remove selected columns
+#df_stats <- subset(df_stats, select=-c(index,team,element_type,value_season))
+
+
+```
+
+Holborn and St Pancras Constituency
+=====================================
+
+Row {data-height=650}
+-------------------------------------
+### Data
+
+```{r echo=FALSE}
+
+cols_to_use <-c("ward_name", "postcode_1","local_authority_name","lsoa_code","Index.of.Multiple.Deprivation..IMD..Rank","Index.of.Multiple.Deprivation..IMD..Decile","All.Ages")
+
+
+position_filter = "Holborn and St Pancras"
+df_filter <- df_data %>% filter(parliamentary_constituency_name == position_filter) 
+df_filter <- subset(df_filter, select=cols_to_use)
+
+cols_display <- c("Ward", "Postcode", "Local Authority","LSOA Code", "IMD Rank","IMD Decile","LSOA Population")
+colnames(df_filter) <- cols_display
+
+
+#data_table <- df_filter
+
+datatable(df_filter,extensions=c('Buttons','Scroller','FixedColumns'),
+  options=list(deferRender=TRUE,
+               headerCallback = DT::JS(
+    "function(thead) {",
+    "  $(thead).css('font-size', '70%');",
+    "}"
+  ),
+  fixedColumns = list(params$fixed_col),
+  #scrollY = 600,
+  scrollY="300px", scrollX="400px",
+  scroller = TRUE,
+  width = 200,
+  order = list(params$sort_col,'asc'),
+  dom = 'Bfrtip',
+  buttons = c('csv')),
+  class = 'cell-border stripe hover compact', rownames = FALSE) %>%
+formatStyle(colnames(df_filter),fontSize = '70%')
+
+
+```
+  
+Row {data-heigth=350} 
+-------------------------------------
+
+### IMD By LSOA code and Ward
+``` {r echo = FALSE}
+cols_to_use <-c("ward_name", "postcode_1","local_authority_name","lsoa_code","Index.of.Multiple.Deprivation..IMD..Rank","Index.of.Multiple.Deprivation..IMD..Decile","All.Ages")
+
+
+position_filter = "Holborn and St Pancras"
+df_filter <- df_data %>% filter(parliamentary_constituency_name == position_filter) 
+df_filter <- subset(df_filter, select=cols_to_use)
+
+cols_display <- c("Ward", "Postcode", "Local Authority","LSOA Code", "IMD Rank","IMD Decile","Population")
+colnames(df_filter) <- cols_display
+
+df_summ <- df_filter %>% 
+  group_by(`LSOA Code`) %>%
+  summarize(`IMD Rank` = median(`IMD Rank`),
+            `IMD decile` = median(`IMD Decile`),
+            `Ward` = unique(Ward),
+            .groups = "keep")
+
+
+p1<- ggplot(df_summ, aes(`IMD Rank`, `IMD decile`, name = `LSOA Code`, color = `Ward`)) + geom_point()
+
+ggplotly(p1)
+
+
+````
+
+### IMD versus Population
+``` {r echo = FALSE}
+
+cols_to_use <-c("ward_name", "postcode_1","local_authority_name","lsoa_code","Index.of.Multiple.Deprivation..IMD..Rank","Index.of.Multiple.Deprivation..IMD..Decile","All.Ages")
+
+
+position_filter = "Holborn and St Pancras"
+df_filter <- df_data %>% filter(parliamentary_constituency_name == position_filter) 
+df_filter <- subset(df_filter, select=cols_to_use)
+
+cols_display <- c("Ward", "Postcode", "Local Authority","LSOA Code", "IMD Rank","IMD Decile","Population")
+colnames(df_filter) <- cols_display
+
+df_summ <- df_filter %>% 
+  group_by(`LSOA Code`) %>%
+  summarize(`IMD Rank` = median(`IMD Rank`),
+            `IMD decile` = median(`IMD Decile`),
+            `Ward` = unique(Ward),
+            `Population` = unique(`Population`),
+            .groups = "keep")
+
+
+p1<- ggplot(df_summ, aes(`Population`, `IMD decile`, name = `LSOA Code`, color = `Ward`)) + geom_point()
+
+ggplotly(p1)
+
+
+````
+
+Hampstead and Kilburn Constituency
+=====================================
+
+Row {data-height=650}
+-------------------------------------
+### Data
+
+```{r echo=FALSE}
+
+cols_to_use <-c("ward_name", "postcode_1","local_authority_name","lsoa_code","Index.of.Multiple.Deprivation..IMD..Rank","Index.of.Multiple.Deprivation..IMD..Decile","All.Ages")
+
+
+position_filter = "Hampstead and Kilburn"
+df_filter <- df_data %>% filter(parliamentary_constituency_name == position_filter) 
+df_filter <- subset(df_filter, select=cols_to_use)
+
+cols_display <- c("Ward", "Postcode", "Local Authority","LSOA Code", "IMD Rank","IMD Decile","LSOA Population")
+colnames(df_filter) <- cols_display
+
+
+#data_table <- df_filter
+
+datatable(df_filter,extensions=c('Buttons','Scroller','FixedColumns'),
+  options=list(deferRender=TRUE,
+               headerCallback = DT::JS(
+    "function(thead) {",
+    "  $(thead).css('font-size', '70%');",
+    "}"
+  ),
+  fixedColumns = list(params$fixed_col),
+  #scrollY = 600,
+  scrollY="300px", scrollX="400px",
+  scroller = TRUE,
+  width = 200,
+  order = list(params$sort_col,'asc'),
+  dom = 'Bfrtip',
+  buttons = c('csv')),
+  class = 'cell-border stripe hover compact', rownames = FALSE) %>%
+formatStyle(colnames(df_filter),fontSize = '70%')
+
+
+```
+  
+Row {data-heigth=350} 
+-------------------------------------
+
+### IMD By LSOA code and Ward
+``` {r echo = FALSE}
+cols_to_use <-c("ward_name", "postcode_1","local_authority_name","lsoa_code","Index.of.Multiple.Deprivation..IMD..Rank","Index.of.Multiple.Deprivation..IMD..Decile","All.Ages")
+
+
+position_filter = "Hampstead and Kilburn"
+df_filter <- df_data %>% filter(parliamentary_constituency_name == position_filter) 
+df_filter <- subset(df_filter, select=cols_to_use)
+
+cols_display <- c("Ward", "Postcode", "Local Authority","LSOA Code", "IMD Rank","IMD Decile","Population")
+colnames(df_filter) <- cols_display
+
+df_summ <- df_filter %>% 
+  group_by(`LSOA Code`) %>%
+  summarize(`IMD Rank` = median(`IMD Rank`),
+            `IMD decile` = median(`IMD Decile`),
+            `Ward` = unique(Ward),
+            .groups = "keep")
+
+
+p1<- ggplot(df_summ, aes(`IMD Rank`, `IMD decile`, name = `LSOA Code`, color = `Ward`)) + geom_point()
+
+ggplotly(p1)
+
+
+````
+
+### IMD versus Population
+``` {r echo = FALSE}
+
+cols_to_use <-c("ward_name", "postcode_1","local_authority_name","lsoa_code","Index.of.Multiple.Deprivation..IMD..Rank","Index.of.Multiple.Deprivation..IMD..Decile","All.Ages")
+
+
+position_filter = "Hampstead and Kilburn"
+df_filter <- df_data %>% filter(parliamentary_constituency_name == position_filter) 
+df_filter <- subset(df_filter, select=cols_to_use)
+
+cols_display <- c("Ward", "Postcode", "Local Authority","LSOA Code", "IMD Rank","IMD Decile","Population")
+colnames(df_filter) <- cols_display
+
+df_summ <- df_filter %>% 
+  group_by(`LSOA Code`) %>%
+  summarize(`IMD Rank` = median(`IMD Rank`),
+            `IMD decile` = median(`IMD Decile`),
+            `Ward` = unique(Ward),
+            `Population` = unique(Population),
+            .groups = "keep")
+
+
+p1<- ggplot(df_summ, aes(`Population`, `IMD decile`, name = `LSOA Code`, color = `Ward`)) + geom_point()
+
+ggplotly(p1)
+
+
+````
+
